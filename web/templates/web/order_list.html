@@ -1,0 +1,39 @@
+{% extends 'web/base.html' %}
+
+{% block title %}FlowerShop | 我的訂單{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h3 mb-0">我的訂單</h1>
+  <a class="btn btn-outline-secondary btn-sm" href="{% url 'web:product-list' %}">繼續購物</a>
+</div>
+
+{% if orders %}
+  <div class="table-responsive">
+    <table class="table table-hover align-middle table-responsive-sm-card">
+      <thead>
+        <tr>
+          <th>訂單編號</th>
+          <th>狀態</th>
+          <th>金額</th>
+          <th>建立時間</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for order in orders %}
+          <tr>
+            <td data-label="訂單編號">#{{ order.id }}</td>
+            <td data-label="狀態"><span class="badge text-bg-light">{{ order.get_status_display }}</span></td>
+            <td data-label="金額">NT$ {{ order.total_amount }}</td>
+            <td data-label="建立時間">{{ order.created_at|date:'Y-m-d H:i' }}</td>
+            <td data-label="詳情"><a class="btn btn-sm btn-outline-primary" href="{% url 'web:order-detail' order.id %}">查看</a></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <div class="alert alert-light border">目前尚無訂單紀錄。</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,80 @@
+:root {
+  --brand-primary: #2f7a57;
+  --brand-accent: #f4a261;
+  --brand-bg: #f8faf8;
+}
+
+body {
+  background-color: var(--brand-bg);
+}
+
+.navbar-brand {
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.card.product-card {
+  border: 0;
+  box-shadow: 0 6px 18px rgba(24, 41, 30, 0.08);
+  border-radius: 14px;
+}
+
+.product-image {
+  height: 220px;
+  object-fit: cover;
+  border-top-left-radius: 14px;
+  border-top-right-radius: 14px;
+}
+
+.badge-status {
+  background-color: rgba(47, 122, 87, 0.15);
+  color: var(--brand-primary);
+}
+
+.btn-brand {
+  background-color: var(--brand-primary);
+  border-color: var(--brand-primary);
+}
+
+.btn-brand:hover,
+.btn-brand:focus {
+  background-color: #266447;
+  border-color: #266447;
+}
+
+.footer {
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.table-responsive-sm-card {
+  width: 100%;
+}
+
+@media (max-width: 767.98px) {
+  .table-responsive-sm-card thead {
+    display: none;
+  }
+
+  .table-responsive-sm-card tr {
+    display: block;
+    margin-bottom: 0.9rem;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    background: #fff;
+    padding: 0.6rem;
+  }
+
+  .table-responsive-sm-card td {
+    display: flex;
+    justify-content: space-between;
+    border: 0;
+    padding: 0.35rem 0.5rem;
+  }
+
+  .table-responsive-sm-card td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #4b5563;
+  }
+}

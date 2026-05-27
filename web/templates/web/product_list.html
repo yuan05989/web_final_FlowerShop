@@ -1,0 +1,77 @@
+{% extends 'web/base.html' %}
+
+{% block title %}FlowerShop | 商品列表{% endblock %}
+
+{% block content %}
+<section class="mb-4">
+  <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+    <div>
+      <h1 class="h3 mb-1">花店商品</h1>
+      <p class="text-muted mb-0">選擇喜歡的花束，立即下單。</p>
+    </div>
+    <a href="/swagger/" class="btn btn-outline-secondary btn-sm">API Docs</a>
+  </div>
+
+  <form method="get" class="row g-2 bg-white rounded-3 p-3 shadow-sm">
+    <div class="col-12 col-md-5">
+      <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="搜尋商品名稱或描述">
+    </div>
+    <div class="col-12 col-md-4">
+      <select name="category" class="form-select">
+        <option value="">全部分類</option>
+        {% for category in categories %}
+          <option value="{{ category.id }}" {% if current_category == category.id|stringformat:'s' %}selected{% endif %}>{{ category.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-12 col-md-3">
+      <button class="btn btn-brand text-white w-100" type="submit">搜尋</button>
+    </div>
+  </form>
+</section>
+
+<section>
+  {% if products %}
+    <div class="row g-4">
+      {% for product in products %}
+        <div class="col-12 col-sm-6 col-lg-4">
+          <div class="card product-card h-100">
+            {% if product.image %}
+              <img src="{{ product.image.url }}" class="product-image" alt="{{ product.name }}">
+            {% else %}
+              <div class="product-image d-flex align-items-center justify-content-center bg-light text-muted">No Image</div>
+            {% endif %}
+            <div class="card-body d-flex flex-column">
+              <div class="mb-2">
+                <span class="badge badge-status">{{ product.category.name }}</span>
+              </div>
+              <h2 class="h5">{{ product.name }}</h2>
+              <p class="text-muted small flex-grow-1">{{ product.description|default:'暫無描述'|truncatechars:80 }}</p>
+              <div class="d-flex justify-content-between align-items-center mt-2">
+                <strong class="text-success">NT$ {{ product.price }}</strong>
+                <a class="btn btn-sm btn-brand text-white" href="{% url 'web:product-detail' product.id %}">查看</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="alert alert-light border">找不到符合條件的商品。</div>
+  {% endif %}
+</section>
+
+{% if is_paginated %}
+<nav class="mt-4" aria-label="Product pagination">
+  <ul class="pagination justify-content-center">
+    {% if page_obj.has_previous %}
+      <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ q }}&category={{ current_category }}">上一頁</a></li>
+    {% endif %}
+    <li class="page-item disabled"><span class="page-link">第 {{ page_obj.number }} / {{ paginator.num_pages }} 頁</span></li>
+    {% if page_obj.has_next %}
+      <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ q }}&category={{ current_category }}">下一頁</a></li>
+    {% endif %}
+  </ul>
+</nav>
+{% endif %}
+{% endblock %}

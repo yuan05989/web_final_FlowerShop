@@ -1,0 +1,145 @@
+from decimal import Decimal
+
+from django.contrib import messages
+from django.contrib.auth import login
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.views import LoginView, LogoutView
+from django.db import transaction
+from django.db.models import Q
+from django.shortcuts import get_object_or_404, redirect
+from django.urls import reverse_lazy
+from django.views.generic import DetailView, FormView, ListView
+
+from accounts.models import UserProfile
+from catalog.models import Category, Product
+from orders.models import Order, OrderItem
+from web.forms import OrderCreateForm, RegisterForm
+
+
+class ProductListView(ListView):
+    model = Product
+    template_name = "web/product_list.html"
+    context_object_name = "products"
+    paginate_by = 9
+
+    def get_queryset(self):
+        queryset = Product.objects.select_related("category").filter(is_active=True).order_by("-created_at")
+        keyword = self.request.GET.get("q", "").strip()
+        category_id = self.request.GET.get("category", "").strip()
+
+        if keyword:
+            queryset = queryset.filter(Q(name__icontains=keyword) | Q(description__icontains=keyword))
+        if category_id.isdigit():
+            queryset = queryset.filter(category_id=int(category_id))
+
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["categories"] = Category.objects.order_by("name")
+        context["q"] = self.request.GET.get("q", "")
+        context["current_category"] = self.request.GET.get("category", "")
+        return context
+
+
+class ProductDetailView(DetailView):
+    model = Product
+    template_name = "web/product_detail.html"
+    context_object_name = "product"
+
+    def get_queryset(self):
+        return Product.objects.select_related("category").filter(is_active=True)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["order_form"] = OrderCreateForm()
+        return context
+
+
+class RegisterPageView(FormView):
+    template_name = "registration/register.html"
+    form_class = RegisterForm
+    success_url = reverse_lazy("web:product-list")
+
+    def form_valid(self, form):
+        user = form.save(commit=False)
+        user.set_password(form.cleaned_data["password1"])
+        user.save()
+
+        UserProfile.objects.create(
+            user=user,
+            phone=form.cleaned_data.get("phone", ""),
+            address=form.cleaned_data.get("address", ""),
+        )
+
+        login(self.request, user)
+        messages.success(self.request, "註冊成功，歡迎加入 FlowerShop。")
+        return super().form_valid(form)
+
+
+class UserLoginView(LoginView):
+    template_name = "registration/login.html"
+
+
+class UserLogoutView(LogoutView):
+    next_page = reverse_lazy("web:product-list")
+
+
+class OrderCreateView(LoginRequiredMixin, FormView):
+    form_class = OrderCreateForm
+
+    def post(self, request, *args, **kwargs):
+        self.object = get_object_or_404(Product, pk=kwargs["pk"], is_active=True)
+        form = self.get_form()
+        if not form.is_valid():
+            messages.error(request, "請輸入有效數量。")
+            return redirect("web:product-detail", pk=self.object.pk)
+
+        quantity = form.cleaned_data["quantity"]
+
+        with transaction.atomic():
+            product = Product.objects.select_for_update().get(pk=self.object.pk)
+            if not product.is_active:
+                messages.error(request, "商品已下架，無法下單。")
+                return redirect("web:product-detail", pk=product.pk)
+            if quantity > product.stock:
+                messages.error(request, f"庫存不足，目前可用庫存為 {product.stock}。")
+                return redirect("web:product-detail", pk=product.pk)
+
+            order = Order.objects.create(user=request.user, total_amount=Decimal("0.00"))
+            line_total = product.price * quantity
+            OrderItem.objects.create(
+                order=order,
+                product=product,
+                quantity=quantity,
+                unit_price=product.price,
+                line_total=line_total,
+            )
+
+            order.total_amount = line_total
+            order.save(update_fields=["total_amount"])
+
+            product.stock -= quantity
+            product.save(update_fields=["stock", "updated_at"])
+
+        messages.success(request, f"下單成功，訂單編號 #{order.id}。")
+        return redirect("web:order-detail", pk=order.pk)
+
+
+class MyOrderListView(LoginRequiredMixin, ListView):
+    model = Order
+    template_name = "web/order_list.html"
+    context_object_name = "orders"
+    paginate_by = 10
+
+    def get_queryset(self):
+        return Order.objects.filter(user=self.request.user).order_by("-created_at")
+
+
+class MyOrderDetailView(LoginRequiredMixin, DetailView):
+    model = Order
+    template_name = "web/order_detail.html"
+    context_object_name = "order"
+
+    def get_queryset(self):
+        return Order.objects.filter(user=self.request.user).prefetch_related("items__product")

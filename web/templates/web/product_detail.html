@@ -1,0 +1,40 @@
+{% extends 'web/base.html' %}
+
+{% block title %}FlowerShop | {{ product.name }}{% endblock %}
+
+{% block content %}
+<div class="row g-4 align-items-start">
+  <div class="col-12 col-lg-6">
+    {% if product.image %}
+      <img src="{{ product.image.url }}" alt="{{ product.name }}" class="img-fluid rounded-4 shadow-sm w-100">
+    {% else %}
+      <div class="bg-light rounded-4 d-flex align-items-center justify-content-center text-muted" style="height: 360px;">No Image</div>
+    {% endif %}
+  </div>
+
+  <div class="col-12 col-lg-6">
+    <p class="mb-2"><span class="badge badge-status">{{ product.category.name }}</span></p>
+    <h1 class="h3">{{ product.name }}</h1>
+    <p class="text-muted">{{ product.description|default:'暫無描述' }}</p>
+    <p class="h4 text-success mb-3">NT$ {{ product.price }}</p>
+    <p class="mb-4">庫存：<strong>{{ product.stock }}</strong></p>
+
+    {% if user.is_authenticated %}
+      <form method="post" action="{% url 'web:order-create' product.id %}" class="row g-2">
+        {% csrf_token %}
+        <div class="col-12 col-md-5">
+          <label class="form-label" for="id_quantity">購買數量</label>
+          <input type="number" name="quantity" min="1" class="form-control" id="id_quantity" value="1" required>
+        </div>
+        <div class="col-12 col-md-7 d-flex align-items-end">
+          <button type="submit" class="btn btn-brand text-white w-100">立即下單</button>
+        </div>
+      </form>
+    {% else %}
+      <div class="alert alert-warning">請先 <a href="{% url 'web:login' %}?next={{ request.path }}">登入</a> 才能下單。</div>
+    {% endif %}
+
+    <a href="{% url 'web:product-list' %}" class="btn btn-link ps-0 mt-3">返回商品列表</a>
+  </div>
+</div>
+{% endblock %}

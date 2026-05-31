@@ -5,7 +5,6 @@ from django.http import JsonResponse
 from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 
-
 def api_root(_request):
     return JsonResponse(
         {
@@ -28,6 +27,8 @@ urlpatterns = [
     path("api/v1/", include("catalog.urls")),
     path("api/v1/", include("orders.urls")),
 ]
+
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

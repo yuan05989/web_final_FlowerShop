@@ -109,3 +109,5 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "FlowerShop v1 backend API documentation",
     "VERSION": "1.0.0",
 }
+MEDIA_URL = "/media/"
+MEDIA_ROOT = BASE_DIR / "media"

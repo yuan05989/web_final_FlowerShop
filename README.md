@@ -65,9 +65,9 @@ python manage.py runserver
   - `GET/PUT/PATCH/DELETE /api/v1/orders/{id}/`
 
 ## 圖片與靜態資源規範
-- 商品圖片放置於：`/Users/funghi/Desktop/TMP/FlowerShop/media/products/`
-- 文件示意圖放置於：`/Users/funghi/Desktop/TMP/FlowerShop/docs/images/`
-- 前端 CSS：`/Users/funghi/Desktop/TMP/FlowerShop/static/css/site.css`
+- 商品圖片放置於：`/FlowerShop/media/products/`
+- 文件示意圖放置於：`/FlowerShop/docs/images/`
+- 前端 CSS：`/FlowerShop/static/css/site.css`
 - 建議命名：`product_<id>_<short-name>.jpg`
 
 ## RWD 驗收建議

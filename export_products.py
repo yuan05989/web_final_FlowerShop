@@ -1,38 +1,22 @@
-import os
-import django
-from openpyxl import Workbook
-
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "FlowerShop.settings")
-django.setup()
+import csv
 
 from catalog.models import Product
 
-wb = Workbook()
-ws = wb.active
-ws.title = "Products"
 
-# 標題列
-ws.append([
-    "name",
-    "category",
-    "price",
-    "stock",
-    "type",
-    "image"
-])
+with open("products_export.csv", "w", newline="", encoding="utf-8-sig") as csvfile:
+    writer = csv.writer(csvfile)
+    writer.writerow(["id", "name", "festival", "type", "category", "price", "stock", "is_active"])
 
-products = Product.objects.all()
-
-for p in products:
-    ws.append([
-        p.name,
-        str(p.category),
-        float(p.price),
-        p.stock,
-        str(p.type),
-        str(p.image)
-    ])
-
-wb.save("products.xlsx")
-
-print("Excel 已匯出：products.xlsx")
+    for product in Product.objects.prefetch_related("type").select_related("category").all():
+        writer.writerow(
+            [
+                product.id,
+                product.name,
+                product.festival,
+                ", ".join(product.type.values_list("name", flat=True)),
+                product.category.name,
+                str(product.price),
+                product.stock,
+                product.is_active,
+            ]
+        )

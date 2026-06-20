@@ -18,6 +18,6 @@ class CategoryViewSet(viewsets.ModelViewSet):
 
 
 class ProductViewSet(viewsets.ModelViewSet):
-    queryset = Product.objects.all().order_by("id")
+    queryset = Product.objects.prefetch_related("type").all().order_by("id")
     serializer_class = ProductSerializer
     permission_classes = [IsAdminOrReadOnly]

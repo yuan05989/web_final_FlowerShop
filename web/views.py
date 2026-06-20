@@ -11,7 +11,7 @@ from django.urls import reverse_lazy
 from django.views.generic import DetailView, FormView, ListView
 
 from accounts.models import UserProfile
-from catalog.models import Category, Product
+from catalog.models import Category, FlowerKind, Product
 from orders.models import Order, OrderItem
 from web.forms import OrderCreateForm, RegisterForm
 
@@ -23,22 +23,32 @@ class ProductListView(ListView):
     paginate_by = 9
 
     def get_queryset(self):
-        queryset = Product.objects.select_related("category").filter(is_active=True).order_by("-created_at")
+        queryset = (
+            Product.objects.select_related("category")
+            .prefetch_related("type")
+            .filter(is_active=True)
+            .order_by("-created_at")
+        )
         keyword = self.request.GET.get("q", "").strip()
         category_id = self.request.GET.get("category", "").strip()
+        type_id = self.request.GET.get("type", "").strip()
 
         if keyword:
             queryset = queryset.filter(Q(name__icontains=keyword) | Q(description__icontains=keyword))
         if category_id.isdigit():
             queryset = queryset.filter(category_id=int(category_id))
+        if type_id.isdigit():
+            queryset = queryset.filter(type__id=int(type_id))
 
-        return queryset
+        return queryset.distinct()
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["categories"] = Category.objects.order_by("name")
+        context["flower_types"] = FlowerKind.objects.order_by("name")
         context["q"] = self.request.GET.get("q", "")
         context["current_category"] = self.request.GET.get("category", "")
+        context["current_type"] = self.request.GET.get("type", "")
         return context
 
 
@@ -48,7 +58,7 @@ class ProductDetailView(DetailView):
     context_object_name = "product"
 
     def get_queryset(self):
-        return Product.objects.select_related("category").filter(is_active=True)
+        return Product.objects.select_related("category").prefetch_related("type").filter(is_active=True)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -73,7 +83,7 @@ class RegisterPageView(FormView):
         )
 
         login(self.request, user)
-        messages.success(self.request, "註冊成功，歡迎加入 FlowerShop。")
+        messages.success(self.request, "Registration successful. Welcome to FlowerShop.")
         return super().form_valid(form)
 
 
@@ -92,7 +102,7 @@ class OrderCreateView(LoginRequiredMixin, FormView):
         self.object = get_object_or_404(Product, pk=kwargs["pk"], is_active=True)
         form = self.get_form()
         if not form.is_valid():
-            messages.error(request, "請輸入有效數量。")
+            messages.error(request, "Please enter a valid quantity.")
             return redirect("web:product-detail", pk=self.object.pk)
 
         quantity = form.cleaned_data["quantity"]
@@ -100,10 +110,10 @@ class OrderCreateView(LoginRequiredMixin, FormView):
         with transaction.atomic():
             product = Product.objects.select_for_update().get(pk=self.object.pk)
             if not product.is_active:
-                messages.error(request, "商品已下架，無法下單。")
+                messages.error(request, "This product is no longer available.")
                 return redirect("web:product-detail", pk=product.pk)
             if quantity > product.stock:
-                messages.error(request, f"庫存不足，目前可用庫存為 {product.stock}。")
+                messages.error(request, f"Insufficient stock. Available quantity: {product.stock}.")
                 return redirect("web:product-detail", pk=product.pk)
 
             order = Order.objects.create(user=request.user, total_amount=Decimal("0.00"))
@@ -122,7 +132,7 @@ class OrderCreateView(LoginRequiredMixin, FormView):
             product.stock -= quantity
             product.save(update_fields=["stock", "updated_at"])
 
-        messages.success(request, f"下單成功，訂單編號 #{order.id}。")
+        messages.success(request, f"Order created successfully. Order #{order.id}.")
         return redirect("web:order-detail", pk=order.pk)
 
 

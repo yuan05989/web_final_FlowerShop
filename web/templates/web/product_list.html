@@ -1,31 +1,39 @@
 {% extends 'web/base.html' %}
 
-{% block title %}FlowerShop | 商品列表{% endblock %}
+{% block title %}FlowerShop | Product List{% endblock %}
 
 {% block content %}
 <section class="mb-4">
   <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
     <div>
-      <h1 class="h3 mb-1">花店商品</h1>
-      <p class="text-muted mb-0">選擇喜歡的花束，立即下單。</p>
+      <h1 class="h3 mb-1">Featured Products</h1>
+      <p class="text-muted mb-0">Browse flowers by keyword, category, and flower type to find the right gift.</p>
     </div>
     <a href="/swagger/" class="btn btn-outline-secondary btn-sm">API Docs</a>
   </div>
 
   <form method="get" class="row g-2 bg-white rounded-3 p-3 shadow-sm">
-    <div class="col-12 col-md-5">
-      <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="搜尋商品名稱或描述">
-    </div>
     <div class="col-12 col-md-4">
+      <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Search by product name or description">
+    </div>
+    <div class="col-12 col-md-3">
       <select name="category" class="form-select">
-        <option value="">全部分類</option>
+        <option value="">All Categories</option>
         {% for category in categories %}
           <option value="{{ category.id }}" {% if current_category == category.id|stringformat:'s' %}selected{% endif %}>{{ category.name }}</option>
         {% endfor %}
       </select>
     </div>
     <div class="col-12 col-md-3">
-      <button class="btn btn-brand text-white w-100" type="submit">搜尋</button>
+      <select name="type" class="form-select">
+        <option value="">All Flower Types</option>
+        {% for flower_type in flower_types %}
+          <option value="{{ flower_type.id }}" {% if current_type == flower_type.id|stringformat:'s' %}selected{% endif %}>{{ flower_type.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-12 col-md-2">
+      <button class="btn btn-brand text-white w-100" type="submit">Search</button>
     </div>
   </form>
 </section>
@@ -46,10 +54,16 @@
                 <span class="badge badge-status">{{ product.category.name }}</span>
               </div>
               <h2 class="h5">{{ product.name }}</h2>
-              <p class="text-muted small flex-grow-1">{{ product.description|default:'暫無描述'|truncatechars:80 }}</p>
+              {% if product.type.all %}
+                <p class="small text-muted mb-2">Flower Type: {{ product.type.all|join:", " }}</p>
+              {% endif %}
+              {% if product.festival %}
+                <p class="small text-muted mb-2">Festival: {{ product.festival }}</p>
+              {% endif %}
+              <p class="text-muted small flex-grow-1">{{ product.description|default:"No description available."|truncatechars:80 }}</p>
               <div class="d-flex justify-content-between align-items-center mt-2">
                 <strong class="text-success">NT$ {{ product.price }}</strong>
-                <a class="btn btn-sm btn-brand text-white" href="{% url 'web:product-detail' product.id %}">查看</a>
+                <a class="btn btn-sm btn-brand text-white" href="{% url 'web:product-detail' product.id %}">View</a>
               </div>
             </div>
           </div>
@@ -57,7 +71,7 @@
       {% endfor %}
     </div>
   {% else %}
-    <div class="alert alert-light border">找不到符合條件的商品。</div>
+    <div class="alert alert-light border">No products match your current filters.</div>
   {% endif %}
 </section>
 
@@ -65,11 +79,11 @@
 <nav class="mt-4" aria-label="Product pagination">
   <ul class="pagination justify-content-center">
     {% if page_obj.has_previous %}
-      <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ q }}&category={{ current_category }}">上一頁</a></li>
+      <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}&q={{ q }}&category={{ current_category }}&type={{ current_type }}">Previous</a></li>
     {% endif %}
-    <li class="page-item disabled"><span class="page-link">第 {{ page_obj.number }} / {{ paginator.num_pages }} 頁</span></li>
+    <li class="page-item disabled"><span class="page-link">Page {{ page_obj.number }} / {{ paginator.num_pages }}</span></li>
     {% if page_obj.has_next %}
-      <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ q }}&category={{ current_category }}">下一頁</a></li>
+      <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}&q={{ q }}&category={{ current_category }}&type={{ current_type }}">Next</a></li>
     {% endif %}
   </ul>
 </nav>

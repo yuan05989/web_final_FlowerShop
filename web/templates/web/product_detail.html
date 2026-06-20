@@ -13,28 +13,36 @@
   </div>
 
   <div class="col-12 col-lg-6">
-    <p class="mb-2"><span class="badge badge-status">{{ product.category.name }}</span></p>
     <h1 class="h3">{{ product.name }}</h1>
-    <p class="text-muted">{{ product.description|default:'暫無描述' }}</p>
+    {% with product.type.all as product_types %}
+      {% if product_types %}
+        <p class="text-muted mb-2">Flower Type: {{ product_types|join:", " }}</p>
+      {% endif %}
+    {% endwith %}
+    {% if product.festival %}
+      <p class="text-muted mb-2">Festival: {{ product.festival }}</p>
+    {% endif %}
+    <p class="text-muted">{{ product.description|default:"No description available." }}</p>
+    <p class="mb-2"><span class="badge badge-status">{{ product.category.name }}</span></p>
     <p class="h4 text-success mb-3">NT$ {{ product.price }}</p>
-    <p class="mb-4">庫存：<strong>{{ product.stock }}</strong></p>
+    <p class="mb-4">Stock: <strong>{{ product.stock }}</strong></p>
 
     {% if user.is_authenticated %}
       <form method="post" action="{% url 'web:order-create' product.id %}" class="row g-2">
         {% csrf_token %}
         <div class="col-12 col-md-5">
-          <label class="form-label" for="id_quantity">購買數量</label>
+          <label class="form-label" for="id_quantity">Quantity</label>
           <input type="number" name="quantity" min="1" class="form-control" id="id_quantity" value="1" required>
         </div>
         <div class="col-12 col-md-7 d-flex align-items-end">
-          <button type="submit" class="btn btn-brand text-white w-100">立即下單</button>
+          <button type="submit" class="btn btn-brand text-white w-100">Place Order</button>
         </div>
       </form>
     {% else %}
-      <div class="alert alert-warning">請先 <a href="{% url 'web:login' %}?next={{ request.path }}">登入</a> 才能下單。</div>
+      <div class="alert alert-warning">Please <a href="{% url 'web:login' %}?next={{ request.path }}">log in</a> before placing an order.</div>
     {% endif %}
 
-    <a href="{% url 'web:product-list' %}" class="btn btn-link ps-0 mt-3">返回商品列表</a>
+    <a href="{% url 'web:product-list' %}" class="btn btn-link ps-0 mt-3">Back to Product List</a>
   </div>
 </div>
 {% endblock %}

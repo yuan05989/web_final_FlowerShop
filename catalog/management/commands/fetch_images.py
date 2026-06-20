@@ -40,22 +40,32 @@ class Command(BaseCommand):
 
             matched_query = None
 
-            # 1. 找花種
-            for keyword, query in FLOWER_KEYWORDS:
-                if keyword in product.name:
-                    matched_query = query
+            # 1. 優先用商品的花種來決定搜尋關鍵字
+            for kind in product.type.all():
+                for keyword, query in FLOWER_KEYWORDS:
+                    if keyword == kind.name:
+                        matched_query = query
+                        break
+                if matched_query:
                     break
+
+            # 2. 如果商品沒有花種，才回退到商品名稱匹配
+            if not matched_query:
+                for keyword, query in FLOWER_KEYWORDS:
+                    if keyword in product.name:
+                        matched_query = query
+                        break
 
             # 沒有符合花種 → 不處理
             if not matched_query:
                 print(f"SKIP (no flower match): {product.name}")
                 continue
 
-            print(f"Searching: {product.name} → {matched_query}")
+            print(f"Searching by flower kind: {product.name} → {matched_query}")
 
             url = "https://api.pexels.com/v1/search"
             params = {
-                "query": f"{matched_query} {product.name}",
+                "query": matched_query,
                 "per_page": 15
             }
 

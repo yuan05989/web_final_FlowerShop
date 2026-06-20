@@ -11,7 +11,7 @@
 <div class="card border-0 shadow-sm mb-4">
   <div class="card-body">
     <div class="row g-3">
-      <div class="col-12 col-md-4"><strong>狀態：</strong>{{ order.get_status_display }}</div>
+      <div class="col-12 col-md-4"><strong>訂單狀態：</strong>{{ order.get_status_display }}</div>
       <div class="col-12 col-md-4"><strong>總金額：</strong>NT$ {{ order.total_amount }}</div>
       <div class="col-12 col-md-4"><strong>建立時間：</strong>{{ order.created_at|date:'Y-m-d H:i' }}</div>
     </div>
@@ -40,7 +40,7 @@
               <td data-label="小計">NT$ {{ item.line_total }}</td>
             </tr>
           {% empty %}
-            <tr><td colspan="4" class="text-center text-muted">此訂單目前無明細。</td></tr>
+            <tr><td colspan="4" class="text-center text-muted">這張訂單目前沒有商品明細。</td></tr>
           {% endfor %}
         </tbody>
       </table>

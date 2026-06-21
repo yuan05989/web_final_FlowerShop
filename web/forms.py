@@ -23,3 +23,7 @@ class RegisterForm(forms.ModelForm):
 
 class OrderCreateForm(forms.Form):
     quantity = forms.IntegerField(min_value=1)
+
+
+class CartAddForm(forms.Form):
+    quantity = forms.IntegerField(min_value=1)

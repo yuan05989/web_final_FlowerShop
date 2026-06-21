@@ -1,0 +1,51 @@
+{% extends 'web/base.html' %}
+
+{% block title %}FlowerShop | Cart{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h3 mb-0">Shopping Cart</h1>
+  <a class="btn btn-outline-secondary btn-sm" href="{% url 'web:product-list' %}">Continue Shopping</a>
+</div>
+
+{% if cart_items %}
+  <div class="table-responsive mb-3">
+    <table class="table table-hover align-middle table-responsive-sm-card">
+      <thead>
+        <tr>
+          <th>Product</th>
+          <th>Unit Price</th>
+          <th>Quantity</th>
+          <th>Subtotal</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in cart_items %}
+          <tr>
+            <td data-label="Product">{{ item.product.name }}</td>
+            <td data-label="Unit Price">NT$ {{ item.unit_price }}</td>
+            <td data-label="Quantity">{{ item.quantity }}</td>
+            <td data-label="Subtotal">NT$ {{ item.line_total }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 bg-white rounded-3 p-3 shadow-sm">
+    <strong class="h5 mb-0">Total: NT$ {{ cart_total }}</strong>
+    <div class="d-flex gap-2">
+      <form method="post" action="{% url 'web:cart-clear' %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-danger">Clear Cart</button>
+      </form>
+      <form method="post" action="{% url 'web:cart-checkout' %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-brand text-white">Checkout</button>
+      </form>
+    </div>
+  </div>
+{% else %}
+  <div class="alert alert-light border">Your cart is empty.</div>
+{% endif %}
+{% endblock %}

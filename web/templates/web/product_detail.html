@@ -28,18 +28,18 @@
     <p class="mb-4">Stock: <strong>{{ product.stock }}</strong></p>
 
     {% if user.is_authenticated %}
-      <form method="post" action="{% url 'web:order-create' product.id %}" class="row g-2">
+      <form method="post" action="{% url 'web:cart-add' product.id %}" class="row g-2">
         {% csrf_token %}
         <div class="col-12 col-md-5">
           <label class="form-label" for="id_quantity">Quantity</label>
           <input type="number" name="quantity" min="1" class="form-control" id="id_quantity" value="1" required>
         </div>
         <div class="col-12 col-md-7 d-flex align-items-end">
-          <button type="submit" class="btn btn-brand text-white w-100">Place Order</button>
+          <button type="submit" class="btn btn-brand text-white w-100">Add to Cart</button>
         </div>
       </form>
     {% else %}
-      <div class="alert alert-warning">Please <a href="{% url 'web:login' %}?next={{ request.path }}">log in</a> before placing an order.</div>
+      <div class="alert alert-warning">Please <a href="{% url 'web:login' %}?next={{ request.path }}">log in</a> before adding this product to your cart.</div>
     {% endif %}
 
     <a href="{% url 'web:product-list' %}" class="btn btn-link ps-0 mt-3">Back to Product List</a>

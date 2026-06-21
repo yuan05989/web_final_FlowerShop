@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from django.db import transaction
 from rest_framework import serializers
 
 from catalog.models import Product
@@ -33,45 +34,66 @@ class OrderCreateSerializer(serializers.Serializer):
 
     def create(self, validated_data):
         request = self.context["request"]
-        order = Order.objects.create(user=request.user)
-
-        total = Decimal("0.00")
         items_data = validated_data["items"]
 
-        for item in items_data:
-            product = Product.objects.get(pk=item["product_id"])
-            quantity = item["quantity"]
-            unit_price = product.price
-            line_total = unit_price * quantity
-            total += line_total
+        with transaction.atomic():
+            product_ids = [item["product_id"] for item in items_data]
+            products = Product.objects.select_for_update().filter(id__in=product_ids, is_active=True)
+            product_map = {product.id: product for product in products}
 
-            OrderItem.objects.create(
-                order=order,
-                product=product,
-                quantity=quantity,
-                unit_price=unit_price,
-                line_total=line_total,
-            )
+            for item in items_data:
+                product = product_map[item["product_id"]]
+                if item["quantity"] > product.stock:
+                    raise serializers.ValidationError(
+                        f"Product {product.id} stock insufficient: requested {item['quantity']}, available {product.stock}"
+                    )
 
-        order.total_amount = total
-        order.save(update_fields=["total_amount"])
+            order = Order.objects.create(user=request.user)
+            total = Decimal("0.00")
+
+            for item in items_data:
+                product = product_map[item["product_id"]]
+                quantity = item["quantity"]
+                unit_price = product.price
+                line_total = unit_price * quantity
+                total += line_total
+
+                OrderItem.objects.create(
+                    order=order,
+                    product=product,
+                    quantity=quantity,
+                    unit_price=unit_price,
+                    line_total=line_total,
+                )
+
+                product.stock -= quantity
+                product.save(update_fields=["stock", "updated_at"])
+
+            order.total_amount = total
+            order.save(update_fields=["total_amount"])
         return order
 
     def validate_items(self, value):
         if not value:
             raise serializers.ValidationError("Order items cannot be empty")
 
-        product_ids = [item["product_id"] for item in value]
+        quantity_by_product = {}
+        for item in value:
+            quantity_by_product[item["product_id"]] = quantity_by_product.get(item["product_id"], 0) + item["quantity"]
+
+        product_ids = list(quantity_by_product)
         products = Product.objects.filter(id__in=product_ids, is_active=True)
         product_map = {product.id: product for product in products}
 
-        for item in value:
-            product = product_map.get(item["product_id"])
+        normalized_items = []
+        for product_id, quantity in quantity_by_product.items():
+            product = product_map.get(product_id)
             if not product:
-                raise serializers.ValidationError(f"Product {item['product_id']} not found or inactive")
-            if item["quantity"] > product.stock:
+                raise serializers.ValidationError(f"Product {product_id} not found or inactive")
+            if quantity > product.stock:
                 raise serializers.ValidationError(
-                    f"Product {product.id} stock insufficient: requested {item['quantity']}, available {product.stock}"
+                    f"Product {product.id} stock insufficient: requested {quantity}, available {product.stock}"
                 )
+            normalized_items.append({"product_id": product_id, "quantity": quantity})
 
-        return value
+        return normalized_items

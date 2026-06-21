@@ -1,7 +1,8 @@
 from rest_framework import permissions, status, viewsets
+from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from orders.models import Order
+from orders.models import Order, OrderStatus
 from orders.serializers import OrderCreateSerializer, OrderSerializer
 
 
@@ -33,3 +34,13 @@ class OrderViewSet(viewsets.ModelViewSet):
         order = serializer.save()
         output = OrderSerializer(order)
         return Response(output.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=["post"])
+    def cancel(self, request, pk=None):
+        order = self.get_object()
+        if order.status == OrderStatus.CANCELLED:
+            return Response(OrderSerializer(order).data, status=status.HTTP_200_OK)
+
+        order.status = OrderStatus.CANCELLED
+        order.save(update_fields=["status", "updated_at"])
+        return Response(OrderSerializer(order).data, status=status.HTTP_200_OK)

@@ -91,6 +91,15 @@ class RegisterPageView(FormView):
 class UserLoginView(LoginView):
     template_name = "registration/login.html"
 
+    def get_success_url(self):
+        # ponytail: unified login — send staff to /admin/, members to the shop
+        url = self.get_redirect_url()  # honors ?next=
+        if url:
+            return url
+        if self.request.user.is_staff:
+            return "/admin/"
+        return str(reverse_lazy("web:product-list"))
+
 
 class UserLogoutView(LogoutView):
     next_page = reverse_lazy("web:product-list")

@@ -9,11 +9,10 @@
       <h1 class="h3 mb-1">Featured Products</h1>
       <p class="text-muted mb-0">Browse flowers by keyword, category, and flower type to find the right gift.</p>
     </div>
-    <a href="/swagger/" class="btn btn-outline-secondary btn-sm">API Docs</a>
   </div>
 
-  <form method="get" class="row g-2 bg-white rounded-3 p-3 shadow-sm">
-    <div class="col-12 col-md-4">
+  <form method="get" id="product-search" class="row g-2 bg-white rounded-3 p-3 shadow-sm">
+    <div class="col-12 col-md-6">
       <input type="text" name="q" value="{{ q }}" class="form-control" placeholder="Search by product name or description">
     </div>
     <div class="col-12 col-md-3">
@@ -32,18 +31,16 @@
         {% endfor %}
       </select>
     </div>
-    <div class="col-12 col-md-2">
-      <button class="btn btn-brand text-white w-100" type="submit">Search</button>
-    </div>
   </form>
 </section>
 
+<div id="product-results">
 <section>
   {% if products %}
     <div class="row g-4">
       {% for product in products %}
         <div class="col-12 col-sm-6 col-lg-4">
-          <div class="card product-card h-100">
+          <div class="card product-card h-100 position-relative">
             {% if product.image %}
               <img src="{{ product.image.url }}" class="product-image" alt="{{ product.name }}">
             {% else %}
@@ -53,7 +50,7 @@
               <div class="mb-2">
                 <span class="badge badge-status">{{ product.category.name }}</span>
               </div>
-              <h2 class="h5">{{ product.name }}</h2>
+              <h2 class="h5"><a href="{% url 'web:product-detail' product.id %}" class="stretched-link text-reset text-decoration-none">{{ product.name }}</a></h2>
               {% if product.type.all %}
                 <p class="small text-muted mb-2">Flower Type: {{ product.type.all|join:", " }}</p>
               {% endif %}
@@ -62,8 +59,16 @@
               {% endif %}
               <p class="text-muted small flex-grow-1">{{ product.description|default:"No description available."|truncatechars:80 }}</p>
               <div class="d-flex justify-content-between align-items-center mt-2">
-                <strong class="text-success">NT$ {{ product.price }}</strong>
-                <a class="btn btn-sm btn-brand text-white" href="{% url 'web:product-detail' product.id %}">View</a>
+                <span class="product-price">NT$ {{ product.price }} <small>/ 束</small></span>
+                <form method="post" action="{% url 'web:cart-add' product.id %}" class="position-relative" style="z-index:2">
+                  {% csrf_token %}
+                  <input type="hidden" name="quantity" value="1">
+                  <button type="submit" class="btn-add" title="Add to cart" aria-label="Add to cart">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" viewBox="0 0 24 24">
+                      <path d="M12 5v14M5 12h14"/>
+                    </svg>
+                  </button>
+                </form>
               </div>
             </div>
           </div>
@@ -88,4 +93,28 @@
   </ul>
 </nav>
 {% endif %}
+</div>
+
+<script>
+(() => {
+  const form = document.getElementById('product-search');
+  let timer;
+
+  async function run() {
+    const params = new URLSearchParams(new FormData(form)).toString();
+    const url = location.pathname + (params ? '?' + params : '');
+    const html = await (await fetch(url, {headers: {'X-Requested-With': 'fetch'}})).text();
+    const fresh = new DOMParser().parseFromString(html, 'text/html').getElementById('product-results');
+    if (fresh) document.getElementById('product-results').innerHTML = fresh.innerHTML;
+    history.replaceState(null, '', url);
+  }
+
+  form.addEventListener('submit', (e) => { e.preventDefault(); run(); });
+  form.querySelector('[name=q]').addEventListener('input', () => {
+    clearTimeout(timer);
+    timer = setTimeout(run, 250);
+  });
+  form.querySelectorAll('select').forEach(s => s.addEventListener('change', run));
+})();
+</script>
 {% endblock %}
